@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useHistory } from '../hooks/useHistory';
 import { colors, spacing, fontSizes, borderRadius } from '../utils/theme';
 import Button from '../components/ui/Button';
+import { Header } from '../components/ui';
 
 const HistoryScreen = () => {
     const { history, clearHistory, cleanupOldHistory, loadHistory } = useHistory();
@@ -29,18 +30,20 @@ const HistoryScreen = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Timer History</Text>
-                {history.length > 0 && (
-                    <Button
-                        title="Clear History"
-                        onPress={clearHistory}
-                        style={styles.clearButton}
-                    />
-                )}
-            </View>
-
+        <View style={styles.screenContainer}>
+            <Header
+                title="Timer History"
+                subtitle="View your completed timers"
+                rightComponent={
+                    history.length > 0 ? (
+                        <Button
+                            title="Clear"
+                            onPress={clearHistory}
+                            style={styles.clearButton}
+                        />
+                    ) : undefined
+                }
+            />
             <FlatList
                 data={history}
                 keyExtractor={(item) => item.id}
@@ -70,6 +73,10 @@ const HistoryScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    screenContainer: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -92,6 +99,7 @@ const styles = StyleSheet.create({
     },
     listContent: {
         flexGrow: 1,
+        padding: spacing.lg,
     },
     historyItem: {
         backgroundColor: colors.card,

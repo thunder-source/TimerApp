@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StatusBar, StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
-import AddTimerScreen from './screens/AddTimerScreen';
 import HistoryScreen from './screens/HistoryScreen';
 import { colors, borderRadius, spacing } from './utils/theme';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TimerProvider } from './contexts/TimerContext';
+import { Header } from './components/ui';
 
 const Tab = createBottomTabNavigator();
 
@@ -37,7 +37,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   // Map route names to icon names
   const icons: Record<string, string> = {
     Home: 'home',
-    'Add Timer': 'timer',
     History: 'history',
   };
   return (
@@ -95,17 +94,13 @@ export default function App() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <NavigationContainer>
-          <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
           <Tab.Navigator
             tabBar={props => <CustomTabBar {...props} />}
             screenOptions={{
-              headerStyle: { backgroundColor: colors.background, elevation: 0, shadowOpacity: 0 },
-              headerTitleStyle: { color: colors.text, fontWeight: 'bold' },
-              headerTintColor: colors.primary,
+              headerShown: false,
             }}
           >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Add Timer" component={AddTimerScreen} />
             <Tab.Screen name="History" component={HistoryScreen} />
           </Tab.Navigator>
         </NavigationContainer>
