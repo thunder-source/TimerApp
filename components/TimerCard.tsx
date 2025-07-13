@@ -4,6 +4,7 @@ import Button from './ui/Button';
 import { Timer, TimerStatus } from '../contexts/TimerContext';
 import { formatSeconds } from '../utils/time';
 import { spacing } from '../utils/theme';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TimerCardProps {
     timer: Timer;
@@ -13,6 +14,8 @@ interface TimerCardProps {
 }
 
 const TimerCard: React.FC<TimerCardProps> = ({ timer, onStart, onPause, onReset }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors, spacing);
     const progress = 1 - timer.remaining / timer.duration;
     return (
         <View style={styles.card}>
@@ -51,15 +54,15 @@ const TimerCard: React.FC<TimerCardProps> = ({ timer, onStart, onPause, onReset 
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, spacing: any) => StyleSheet.create({
     card: {
-        backgroundColor: '#f9f9f9',
+        backgroundColor: colors.card,
         borderRadius: 8,
         padding: 16,
         marginBottom: 16,
         marginHorizontal: 16,
         alignItems: 'center',
-        shadowColor: '#000',
+        shadowColor: colors.shadow || '#000',
         shadowOpacity: 0.1,
         shadowRadius: 4,
         shadowOffset: { width: 0, height: 2 },
@@ -68,28 +71,30 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: colors.text,
     },
     time: {
         fontSize: 32,
         fontWeight: 'bold',
         marginVertical: 8,
+        color: colors.text,
     },
     status: {
         fontSize: 14,
-        color: '#888',
+        color: colors.muted,
         marginBottom: 8,
     },
     progressBarContainer: {
         width: '100%',
         height: 8,
-        backgroundColor: '#eee',
+        backgroundColor: colors.border,
         borderRadius: 4,
         overflow: 'hidden',
         marginBottom: 12,
     },
     progressBar: {
         height: '100%',
-        backgroundColor: '#4caf50',
+        backgroundColor: colors.primary,
     },
     buttonRow: {
         width: '100%',

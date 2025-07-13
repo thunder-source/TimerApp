@@ -4,10 +4,12 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import HistoryScreen from './screens/HistoryScreen';
-import { colors, borderRadius, spacing } from './utils/theme';
+import SettingsScreen from './screens/SettingsScreen';
+import { borderRadius, spacing } from './utils/theme';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TimerProvider, useTimers } from './contexts/TimerContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import CompletionModal from './components/CompletionModal';
 import { configureNotificationChannel, useNotifications } from './hooks/useNotifications';
 
@@ -15,6 +17,7 @@ const Tab = createBottomTabNavigator();
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const { colors } = useTheme();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -36,10 +39,13 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const icons: Record<string, string> = {
     Home: 'home',
     History: 'history',
+    Settings: 'cog',
   };
 
+  const tabBarStyles = createTabBarStyles(colors, borderRadius, spacing);
+
   return (
-    <View style={styles.tabBar}>
+    <View style={tabBarStyles.tabBar}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label = typeof options.tabBarLabel === 'string'
@@ -65,15 +71,15 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 navigation.navigate(route.name);
               }
             }}
-            style={[styles.tabItem, isFocused && styles.tabItemFocused]}
+            style={[tabBarStyles.tabItem, isFocused && tabBarStyles.tabItemFocused]}
           >
             <Ionicons
               name={iconName}
               size={24}
               color={isFocused ? colors.primary : colors.muted}
-              style={styles.tabIcon}
+              style={tabBarStyles.tabIcon}
             />
-            <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
+            <Text style={[tabBarStyles.tabLabel, isFocused && tabBarStyles.tabLabelFocused]}>
               {label}
             </Text>
           </TouchableOpacity>
@@ -83,77 +89,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   );
 }
 
-function AppContent() {
-  const { completionModal, hideCompletionModal } = useTimers();
-
-  return (
-    <>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <NavigationContainer>
-          <Tab.Navigator
-            tabBar={props => <CustomTabBar {...props} />}
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="History" component={HistoryScreen} />
-          </Tab.Navigator>
-        </NavigationContainer>
-      </KeyboardAvoidingView>
-
-      <CompletionModal
-        visible={completionModal.visible}
-        timerName={completionModal.timerName}
-        onClose={hideCompletionModal}
-      />
-    </>
-  );
-}
-
-export default function App() {
-  const { requestPermissions, checkPermissions } = useNotifications();
-
-  useEffect(() => {
-    const initializeNotifications = async () => {
-      try {
-        console.log('Initializing notifications...');
-
-        // Configure notification channel
-        configureNotificationChannel();
-
-        // Check and request permissions
-        const hasPermission = await checkPermissions();
-        if (!hasPermission) {
-          console.log('Requesting notification permissions...');
-          const granted = await requestPermissions();
-          console.log('Notification permission granted:', granted);
-        } else {
-          console.log('Notification permissions already granted');
-        }
-      } catch (error) {
-        console.error('Error initializing notifications:', error);
-      }
-    };
-
-    initializeNotifications();
-  }, []);
-
-  return (
-    <TimerProvider>
-      <AppContent />
-    </TimerProvider>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
+const createTabBarStyles = (colors: any, borderRadius: any, spacing: any) => StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.card,
@@ -190,3 +126,81 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+function AppContent() {
+  const { completionModal, hideCompletionModal } = useTimers();
+  const { colors } = useTheme();
+  const containerStyle = createContainerStyle(colors);
+
+  return (
+    <>
+      <KeyboardAvoidingView
+        style={containerStyle}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <NavigationContainer>
+          <Tab.Navigator
+            tabBar={props => <CustomTabBar {...props} />}
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="History" component={HistoryScreen} />
+            <Tab.Screen name="Settings" component={SettingsScreen} />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </KeyboardAvoidingView>
+
+      <CompletionModal
+        visible={completionModal.visible}
+        timerName={completionModal.timerName}
+        onClose={hideCompletionModal}
+      />
+    </>
+  );
+}
+
+const createContainerStyle = (colors: any) => ({
+  flex: 1,
+  backgroundColor: colors.background,
+});
+
+export default function App() {
+  const { requestPermissions, checkPermissions } = useNotifications();
+
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        console.log('Initializing notifications...');
+
+        // Configure notification channel
+        configureNotificationChannel();
+
+        // Check and request permissions
+        const hasPermission = await checkPermissions();
+        if (!hasPermission) {
+          console.log('Requesting notification permissions...');
+          const granted = await requestPermissions();
+          console.log('Notification permission granted:', granted);
+        } else {
+          console.log('Notification permissions already granted');
+        }
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <TimerProvider>
+        <AppContent />
+      </TimerProvider>
+    </ThemeProvider>
+  );
+}
+
+

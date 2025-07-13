@@ -2,13 +2,14 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { FlatList, StyleSheet, View, Text, Modal, TouchableOpacity, Alert, AppState } from 'react-native';
 import { useTimers, Timer } from '../contexts/TimerContext';
 import CategoryGroup from '../components/CategoryGroup';
-import { colors, fontSizes } from '../utils/theme';
+import { fontSizes } from '../utils/theme';
 import { Header, Button, Input } from '../components/ui';
 import CustomDropdown from '../components/ui/CustomDropdown';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { generateUniqueId } from '../utils/time';
 import { useAsyncStorage } from '../hooks/useAsyncStorage';
 import { CATEGORIES_KEY } from '../constant/storageKeys';
+import { useTheme } from '../contexts/ThemeContext';
 
 function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
     // Filter out completed timers - they should only appear in history
@@ -23,6 +24,7 @@ function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
 
 const HomeScreen = () => {
     const { timers, dispatch } = useTimers();
+    const { colors } = useTheme();
     const grouped = useMemo(() => groupTimersByCategory(timers), [timers]);
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
         // By default, all categories expanded
@@ -213,6 +215,8 @@ const HomeScreen = () => {
         />
     );
 
+    const styles = createStyles(colors);
+
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No active timers</Text>
@@ -301,6 +305,7 @@ const HomeScreen = () => {
                                 title="Select Category"
                             />
                             <Button
+                                style={{ flex: undefined }}
                                 title="Save Timer"
                                 disabled={
                                     !name.trim() ||
@@ -319,14 +324,14 @@ const HomeScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     screenContainer: {
         flex: 1,
-        backgroundColor: colors.light,
+        backgroundColor: colors.background,
     },
     container: {
         padding: 16,
-        backgroundColor: colors.light,
+        backgroundColor: colors.background,
         minHeight: '100%',
     },
     addButton: {
@@ -348,12 +353,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 8,
     },
     emptySubtitle: {
         fontSize: 16,
-        color: '#6b7280',
+        color: colors.muted,
         textAlign: 'center',
     },
     modalOverlay: {

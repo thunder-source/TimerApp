@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from 're
 import Button from './ui/Button';
 import { Timer } from '../contexts/TimerContext';
 import TimerCard from './TimerCard';
-import { colors, spacing, fontSizes, borderRadius } from '../utils/theme';
+import { spacing, fontSizes, borderRadius } from '../utils/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface CategoryGroupProps {
@@ -31,6 +32,8 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
     expanded,
     onToggle,
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors, spacing, fontSizes, borderRadius);
     const [rotateAnim] = useState(new Animated.Value(0));
 
     React.useEffect(() => {
@@ -131,19 +134,18 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, spacing: any, fontSizes: any, borderRadius: any) => StyleSheet.create({
     groupContainer: {
         marginVertical: spacing.md,
         width: '100%',
         backgroundColor: colors.card,
         borderRadius: borderRadius.md,
-        shadowColor: '#000',
+        shadowColor: colors.shadow || '#000',
         shadowOpacity: 0.08,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
         elevation: 3,
         overflow: 'hidden',
-
     },
     header: {
         flexDirection: 'row',
@@ -151,7 +153,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.md,
-        backgroundColor: colors.background,
+        backgroundColor: colors.card,
         borderBottomColor: colors.border,
     },
     categoryInfo: {
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     badgeText: {
-        color: '#FFFFFF',
+        color: colors.card,
         fontSize: fontSizes.small,
         fontWeight: '600',
     },
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.sm,
     },
     completedBadge: {
-        backgroundColor: '#4CAF50' + '20',
+        backgroundColor: (colors.success || '#4CAF50') + '20',
     },
     statusDot: {
         width: 6,
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
         marginRight: spacing.xs,
     },
     completedDot: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: colors.success || '#4CAF50',
     },
     statusText: {
         fontSize: fontSizes.small,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextInput, View, Text, StyleSheet, StyleProp, ViewStyle, TextInputProps } from 'react-native';
-import { colors, borderRadius, spacing, fontSizes } from '../../utils/theme';
+import { borderRadius, spacing, fontSizes } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface InputProps extends TextInputProps {
     error?: string;
@@ -8,6 +9,9 @@ interface InputProps extends TextInputProps {
 }
 
 const Input = React.forwardRef<TextInput, InputProps>(({ error, style, ...props }, ref) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+
     return (
         <View style={style}>
             <TextInput
@@ -21,7 +25,7 @@ const Input = React.forwardRef<TextInput, InputProps>(({ error, style, ...props 
     );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     input: {
         backgroundColor: colors.card,
         borderRadius: borderRadius.sm,

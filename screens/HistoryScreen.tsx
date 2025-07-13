@@ -2,12 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useHistory } from '../hooks/useHistory';
-import { colors, spacing, fontSizes, borderRadius } from '../utils/theme';
+import { spacing, fontSizes, borderRadius } from '../utils/theme';
 import Button from '../components/ui/Button';
 import { Header, Loading } from '../components/ui';
+import { useTheme } from '../contexts/ThemeContext';
 
 const HistoryScreen = () => {
     const { history, isLoading, clearHistory, cleanupOldHistory, loadHistory } = useHistory();
+    const { colors } = useTheme();
 
     // Auto-cleanup old history entries (older than 30 days) when component mounts
     React.useEffect(() => {
@@ -72,6 +74,8 @@ const HistoryScreen = () => {
         }
     };
 
+    const styles = createStyles(colors);
+
     return (
         <View style={styles.screenContainer}>
             <Header
@@ -130,10 +134,10 @@ const HistoryScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     screenContainer: {
         flex: 1,
-        backgroundColor: colors.light,
+        backgroundColor: colors.background,
     },
     container: {
         flex: 1,
@@ -152,8 +156,8 @@ const styles = StyleSheet.create({
         color: colors.text,
     },
     clearButton: {
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        flex: undefined
     },
     listContent: {
         flexGrow: 1,

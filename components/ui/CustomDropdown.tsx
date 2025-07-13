@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Modal, FlatList, TextInput, StyleSheet, Alert } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { spacing, fontSizes, borderRadius } from '../../utils/theme';
 
 interface SimpleCreatableDropdownProps {
     options: string[];
@@ -24,6 +25,8 @@ const CustomDropdown: React.FC<SimpleCreatableDropdownProps> = ({
     title = 'Select Option',
     style
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [isOpen, setIsOpen] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -190,7 +193,7 @@ const CustomDropdown: React.FC<SimpleCreatableDropdownProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         minHeight: 44,
     },

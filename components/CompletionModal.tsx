@@ -1,7 +1,9 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors, fontSizes, spacing, borderRadius } from '../utils/theme';
+import { fontSizes, spacing, borderRadius } from '../utils/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Button } from './ui';
 
 interface CompletionModalProps {
     visible: boolean;
@@ -14,6 +16,8 @@ const CompletionModal: React.FC<CompletionModalProps> = ({
     timerName,
     onClose
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors, fontSizes, spacing, borderRadius);
     return (
         <Modal
             visible={visible}
@@ -44,7 +48,7 @@ const CompletionModal: React.FC<CompletionModalProps> = ({
                         Great job! You've successfully completed your timer.
                     </Text>
 
-                    <TouchableOpacity
+                    {/* <TouchableOpacity
                         style={styles.closeButton}
                         onPress={() => {
                             console.log('Completion modal closed by user - clearing completed timers');
@@ -52,15 +56,15 @@ const CompletionModal: React.FC<CompletionModalProps> = ({
                         }}
                         activeOpacity={0.8}
                     >
-                        <Text style={styles.closeButtonText}>Continue</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
+                    <Button onPress={() => onClose()} title="Continue" style={styles.closeButton} />
                 </View>
             </View>
         </Modal>
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any, fontSizes: any, spacing: any, borderRadius: any) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -75,7 +79,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         maxWidth: 320,
         width: '100%',
-        shadowColor: '#000',
+        shadowColor: colors.shadow || '#000',
         shadowOffset: {
             width: 0,
             height: 4,
@@ -109,17 +113,7 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     closeButton: {
-        backgroundColor: colors.primary,
-        paddingHorizontal: spacing.xl,
-        paddingVertical: spacing.md,
-        borderRadius: borderRadius.md,
-        minWidth: 120,
-    },
-    closeButtonText: {
-        color: colors.light,
-        fontSize: fontSizes.medium,
-        fontWeight: '600',
-        textAlign: 'center',
+        marginBottom: spacing.md,
     },
 });
 

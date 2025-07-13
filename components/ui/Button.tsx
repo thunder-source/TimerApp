@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, StyleProp } from 'react-native';
-import { colors, borderRadius, spacing, fontSizes } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { borderRadius, spacing, fontSizes } from '../../utils/theme';
 
 interface ButtonProps {
     title: string;
@@ -11,6 +12,8 @@ interface ButtonProps {
 }
 
 const Button: React.FC<ButtonProps> = ({ title, onPress, loading, disabled, style }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     return (
         <TouchableOpacity
             style={[styles.button, disabled && styles.disabled, style]}
@@ -27,7 +30,7 @@ const Button: React.FC<ButtonProps> = ({ title, onPress, loading, disabled, styl
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     button: {
         backgroundColor: colors.primary,
         borderRadius: borderRadius.sm,

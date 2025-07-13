@@ -1,6 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
-import { colors, spacing, fontSizes, borderRadius } from '../../utils/theme';
+import { spacing, fontSizes, borderRadius } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
+import { isColorDark } from '../../utils/colorUtils';
+
 
 interface HeaderProps {
     title: string;
@@ -15,9 +18,14 @@ export const Header: React.FC<HeaderProps> = ({
     rightComponent,
     leftComponent,
 }) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
+            <StatusBar
+                barStyle={isColorDark(colors.background) ? 'light-content' : 'dark-content'}
+                backgroundColor={colors.background}
+            />
             <View style={styles.content}>
                 {leftComponent && (
                     <View style={styles.leftSection}>
@@ -40,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         backgroundColor: colors.background,
         paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight - 20 : 44,
