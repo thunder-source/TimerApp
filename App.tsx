@@ -11,7 +11,7 @@ import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TimerProvider, useTimers } from './contexts/TimerContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import CompletionModal from './components/CompletionModal';
-import { configureNotificationChannel, useNotifications } from './hooks/useNotifications';
+import { useInitializeNotifications } from './hooks/useInitializeNotifications';
 
 const Tab = createBottomTabNavigator();
 
@@ -167,32 +167,8 @@ const createContainerStyle = (colors: any) => ({
 });
 
 export default function App() {
-  const { requestPermissions, checkPermissions } = useNotifications();
-
-  useEffect(() => {
-    const initializeNotifications = async () => {
-      try {
-        console.log('Initializing notifications...');
-
-        // Configure notification channel
-        configureNotificationChannel();
-
-        // Check and request permissions
-        const hasPermission = await checkPermissions();
-        if (!hasPermission) {
-          console.log('Requesting notification permissions...');
-          const granted = await requestPermissions();
-          console.log('Notification permission granted:', granted);
-        } else {
-          console.log('Notification permissions already granted');
-        }
-      } catch (error) {
-        console.error('Error initializing notifications:', error);
-      }
-    };
-
-    initializeNotifications();
-  }, []);
+  // Use the new hook for notification setup
+  useInitializeNotifications();
 
   return (
     <ThemeProvider>
