@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { HISTORY_KEY } from '../constant';
+import { HISTORY_CLEAR_TIMESTAMP_KEY, HISTORY_KEY } from '../constant';
+import { useBackgroundService } from './useBackgroundService';
 
 export interface HistoryItem {
     id: string;
@@ -13,9 +14,13 @@ export interface HistoryItem {
 
 
 export const useHistory = () => {
+    const { clearBackgroundTimerState } = useBackgroundService();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-
+    const [lastClearTimestamp, setLastClearTimestamp] = useState<number>(0);
+    
+    console.log('history',history)
+    
     useEffect(() => {
         loadHistory();
     }, []);
@@ -23,6 +28,11 @@ export const useHistory = () => {
     const loadHistory = async () => {
         setIsLoading(true);
         try {
+            // Load the last clear timestamp
+            const clearTimestampData = await AsyncStorage.getItem(HISTORY_CLEAR_TIMESTAMP_KEY);
+            const clearTimestamp = clearTimestampData ? parseInt(clearTimestampData, 10) : 0;
+            setLastClearTimestamp(clearTimestamp);
+            
             const data = await AsyncStorage.getItem(HISTORY_KEY);
             if (data) {
                 const parsedHistory = JSON.parse(data);
@@ -32,7 +42,13 @@ export const useHistory = () => {
                     duration: item.duration || 0, // Default to 0 if duration is missing
                     category: item.category || 'Uncategorized', // Default to 'Uncategorized' if category is missing
                 }));
-                setHistory(compatibleHistory);
+                
+                // Filter out history items that were completed before the last clear
+                const filteredHistory = compatibleHistory.filter((item: HistoryItem) => 
+                    item.completedAt > clearTimestamp
+                );
+                
+                setHistory(filteredHistory);
             }
         } catch (error) {
             console.error('Error loading history:', error);
@@ -52,6 +68,12 @@ export const useHistory = () => {
                 category: timer.category,
                 completedAt: Date.now(),
             };
+
+            // Check if this timer was completed before the last clear
+            if (newHistoryItem.completedAt <= lastClearTimestamp) {
+                console.log(`Skipping history addition for timer ${timer.name} - completed before last clear`);
+                return;
+            }
 
             setHistory(prevHistory => {
                 // Check if timer with this ID already exists
@@ -75,20 +97,29 @@ export const useHistory = () => {
         } catch (error) {
             console.error('Error adding to history:', error);
         }
-    }, []);
+    }, [lastClearTimestamp]);
 
     const clearHistory = useCallback(async () => {
         console.log('clearHistory function called');
         try {
             console.log('Removing history from AsyncStorage...');
             await AsyncStorage.removeItem(HISTORY_KEY);
+            
+            // Set the clear timestamp to current time
+            const currentTimestamp = Date.now();
+            await AsyncStorage.setItem(HISTORY_CLEAR_TIMESTAMP_KEY, currentTimestamp.toString());
+            setLastClearTimestamp(currentTimestamp);
+            
+            // Also clear background timer state to prevent completed timers from reappearing
+            await clearBackgroundTimerState();
+            
             console.log('History removed from AsyncStorage, clearing state...');
             setHistory([]);
             console.log('History state cleared');
         } catch (error) {
             console.error('Error clearing history:', error);
         }
-    }, []);
+    }, [clearBackgroundTimerState]);
 
     const cleanupOldHistory = useCallback(async (daysToKeep: number = 30) => {
         try {

@@ -62,7 +62,23 @@ export const useBackgroundService = () => {
                 const state: BackgroundTimerState = JSON.parse(data);
                 // Check if the state is recent (within last 5 minutes)
                 if (Date.now() - state.lastUpdate < 5 * 60 * 1000) {
-                    return state.timers;
+                    // Check if history was cleared after any completed timers
+                    const clearTimestampData = await AsyncStorage.getItem('history_clear_timestamp');
+                    const clearTimestamp = clearTimestampData ? parseInt(clearTimestampData, 10) : 0;
+                    
+                    // Filter out completed timers that were completed before the history was cleared
+                    const filteredTimers = state.timers.filter(timer => {
+                        if (timer.status === 'completed') {
+                            // For completed timers, check if they were completed after the last clear
+                            // We need to estimate when they were completed based on the lastUpdate
+                            // Since we don't store completion time in timer state, we'll be conservative
+                            // and only include completed timers if the state was updated after the clear
+                            return state.lastUpdate > clearTimestamp;
+                        }
+                        return true; // Keep all non-completed timers
+                    });
+                    
+                    return filteredTimers;
                 }
             }
         } catch (error) {
@@ -205,6 +221,15 @@ export const useBackgroundService = () => {
         appStateRef.current = nextAppState;
     };
 
+    const clearBackgroundTimerState = async () => {
+        try {
+            await AsyncStorage.removeItem(TIMER_STATE_KEY);
+            console.log('Cleared background timer state');
+        } catch (error) {
+            console.error('Error clearing background timer state:', error);
+        }
+    };
+
     useEffect(() => {
         return () => {
             stopBackgroundService();
@@ -218,5 +243,6 @@ export const useBackgroundService = () => {
         saveTimerState,
         loadTimerState,
         clearCompletedTimers,
+        clearBackgroundTimerState,
     };
 }; 

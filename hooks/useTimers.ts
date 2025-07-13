@@ -94,27 +94,6 @@ export function useTimers() {
         timers.forEach((t) => {
           if (t.status === 'running') {
             dispatch({ type: 'TICK', id: t.id });
-            // Halfway alert
-            if (
-              t.halfwayAlert &&
-              t.remaining === Math.floor(t.duration / 2)
-            ) {
-              scheduleNotification(
-                'Halfway Alert',
-                `${t.name} is halfway done!`,
-                new Date(Date.now()),
-                `${t.id}-halfway`
-              );
-            }
-            // Completion
-            if (t.remaining === 1) {
-              scheduleNotification(
-                'Timer Complete',
-                `${t.name} is complete!`,
-                new Date(Date.now() + 1000),
-                `${t.id}-complete`
-              );
-            }
           }
         });
       }, 1000);

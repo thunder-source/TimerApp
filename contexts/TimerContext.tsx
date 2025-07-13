@@ -169,15 +169,46 @@ export function TimerProvider({ children }: TimerProviderProps) {
         setCompletionModal({ visible: false, timerName: '' });
 
         // Clear completed timers immediately when modal is closed
-        const activeTimers = timers.filter(timer => timer.status !== 'completed');
-        if (activeTimers.length !== timers.length) {
-            console.log(`Clearing ${timers.length - activeTimers.length} completed timers from storage`);
-            AsyncStorage.setItem('timers', JSON.stringify(activeTimers));
-            dispatch({ type: 'LOAD_TIMERS', timers: activeTimers });
+        // But only if they were completed after the history was last cleared
+        const checkHistoryClearTimestamp = async () => {
+            try {
+                const clearTimestampData = await AsyncStorage.getItem('history_clear_timestamp');
+                const clearTimestamp = clearTimestampData ? parseInt(clearTimestampData, 10) : 0;
 
-            // Also clear completed timers from background storage
-            clearCompletedTimers();
-        }
+                // Only clear timers that were completed after the last history clear
+                const activeTimers = timers.filter(timer => {
+                    if (timer.status === 'completed') {
+                        // For completed timers, we need to estimate when they were completed
+                        // Since we don't store completion time in timer state, we'll be conservative
+                        // and only clear them if the history was cleared a long time ago (more than 1 hour)
+                        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+                        return clearTimestamp < oneHourAgo;
+                    }
+                    return true; // Keep all non-completed timers
+                });
+
+                if (activeTimers.length !== timers.length) {
+                    console.log(`Clearing ${timers.length - activeTimers.length} completed timers from storage`);
+                    AsyncStorage.setItem('timers', JSON.stringify(activeTimers));
+                    dispatch({ type: 'LOAD_TIMERS', timers: activeTimers });
+
+                    // Also clear completed timers from background storage
+                    clearCompletedTimers();
+                }
+            } catch (error) {
+                console.error('Error checking history clear timestamp:', error);
+                // Fallback: clear all completed timers
+                const activeTimers = timers.filter(timer => timer.status !== 'completed');
+                if (activeTimers.length !== timers.length) {
+                    console.log(`Clearing ${timers.length - activeTimers.length} completed timers from storage (fallback)`);
+                    AsyncStorage.setItem('timers', JSON.stringify(activeTimers));
+                    dispatch({ type: 'LOAD_TIMERS', timers: activeTimers });
+                    clearCompletedTimers();
+                }
+            }
+        };
+
+        checkHistoryClearTimestamp();
 
         // Clear the completed timers tracking set to prevent memory leaks
         completedTimersRef.current.clear();
@@ -246,7 +277,7 @@ export function TimerProvider({ children }: TimerProviderProps) {
                             console.log(`Timer completed in background: ${timer.name} (ID: ${timer.id})`);
 
                             // Add to history IMMEDIATELY when timer completes in background
-                            // addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
+                            addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
 
                             // Schedule completion notification
                             const notificationTime = new Date(Date.now() + 1000);
