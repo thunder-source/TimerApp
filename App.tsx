@@ -9,6 +9,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TimerProvider, useTimers } from './contexts/TimerContext';
 import CompletionModal from './components/CompletionModal';
+import { configureNotificationChannel, useNotifications } from './hooks/useNotifications';
 
 const Tab = createBottomTabNavigator();
 
@@ -114,6 +115,33 @@ function AppContent() {
 }
 
 export default function App() {
+  const { requestPermissions, checkPermissions } = useNotifications();
+
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        console.log('Initializing notifications...');
+
+        // Configure notification channel
+        configureNotificationChannel();
+
+        // Check and request permissions
+        const hasPermission = await checkPermissions();
+        if (!hasPermission) {
+          console.log('Requesting notification permissions...');
+          const granted = await requestPermissions();
+          console.log('Notification permission granted:', granted);
+        } else {
+          console.log('Notification permissions already granted');
+        }
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
+      }
+    };
+
+    initializeNotifications();
+  }, []);
+
   return (
     <TimerProvider>
       <AppContent />

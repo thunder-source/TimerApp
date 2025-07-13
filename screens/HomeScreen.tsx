@@ -4,9 +4,11 @@ import { useTimers, Timer } from '../contexts/TimerContext';
 import CategoryGroup from '../components/CategoryGroup';
 import { colors, fontSizes } from '../utils/theme';
 import { Header, Button, Input } from '../components/ui';
-import Dropdown from '../components/ui/Dropdown';
+import CustomDropdown from '../components/ui/CustomDropdown';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { generateUniqueId } from '../utils/time';
+import { useAsyncStorage } from '../hooks/useAsyncStorage';
+import { CATEGORIES_KEY } from '../constant/storageKeys';
 
 function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
     // Filter out completed timers - they should only appear in history
@@ -32,6 +34,40 @@ const HomeScreen = () => {
     const [appState, setAppState] = useState(AppState.currentState);
     const [backgroundStatus, setBackgroundStatus] = useState('Active');
 
+    // Add timer form state
+    const { getItem: getCategories, setItem: saveCategories } = useAsyncStorage<string[]>(CATEGORIES_KEY);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [name, setName] = useState('');
+    const [duration, setDuration] = useState('');
+    const [category, setCategory] = useState('');
+
+    // Load categories from storage on mount
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const savedCategories = await getCategories();
+                if (savedCategories && savedCategories.length > 0) {
+                    setCategories(savedCategories);
+                    setCategory(savedCategories[0]);
+                } else {
+                    // Set default categories if none exist
+                    const defaultCategories = ['Workout', 'Study', 'Break'];
+                    setCategories(defaultCategories);
+                    setCategory(defaultCategories[0]);
+                    await saveCategories(defaultCategories);
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                // Fallback to default categories
+                const defaultCategories = ['Workout', 'Study', 'Break'];
+                setCategories(defaultCategories);
+                setCategory(defaultCategories[0]);
+            }
+        };
+
+        loadCategories();
+    }, [getCategories, saveCategories]);
+
     // Monitor app state for background timer status
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextAppState => {
@@ -48,13 +84,6 @@ const HomeScreen = () => {
         return () => subscription?.remove();
     }, []);
 
-    // Add timer form state
-    const [categories, setCategories] = useState(['Workout', 'Study', 'Break']);
-    const [name, setName] = useState('');
-    const [duration, setDuration] = useState('');
-    const [category, setCategory] = useState('Workout');
-    const [addingCategory, setAddingCategory] = useState(false);
-    const [newCategory, setNewCategory] = useState('');
 
     const handleToggle = (category: string) => {
         setExpandedCategories((prev) => ({
@@ -85,16 +114,11 @@ const HomeScreen = () => {
         setIsAddTimerModalVisible(false);
     };
 
-    const handleCategoryChange = (itemValue: string, option: any) => {
-        if (itemValue === '__add_new__') {
-            setAddingCategory(true);
-            setNewCategory('');
-        } else {
-            setCategory(itemValue);
-        }
+    const handleCategoryChange = (itemValue: string) => {
+        setCategory(itemValue);
     };
 
-    const handleAddCategory = () => {
+    const handleAddCategory = async (newCategory: string) => {
         const trimmed = newCategory.trim();
         if (!trimmed) {
             Alert.alert('Category name cannot be empty.');
@@ -107,9 +131,46 @@ const HomeScreen = () => {
         const updated = [...categories, trimmed];
         setCategories(updated);
         setCategory(trimmed);
-        setAddingCategory(false);
-        setNewCategory('');
+
+        // Save to storage
+        try {
+            await saveCategories(updated);
+        } catch (error) {
+            console.error('Error saving categories:', error);
+        }
     };
+
+    const handleDeleteCategory = async (categoryToDelete: string) => {
+        // Check if there are any timers using this category
+        const timersInCategory = timers.filter(timer => timer.category === categoryToDelete);
+
+        if (timersInCategory.length > 0) {
+            Alert.alert(
+                'Cannot Delete Category',
+                `This category has ${timersInCategory.length} active timer(s). Please delete or move the timers first.`,
+                [{ text: 'OK', style: 'default' }]
+            );
+            return;
+        }
+
+        // Remove the category from the list
+        const updated = categories.filter(cat => cat !== categoryToDelete);
+        setCategories(updated);
+
+        // If the deleted category was selected, reset to first available category
+        if (category === categoryToDelete) {
+            setCategory(updated.length > 0 ? updated[0] : '');
+        }
+
+        // Save to storage
+        try {
+            await saveCategories(updated);
+        } catch (error) {
+            console.error('Error saving categories:', error);
+        }
+    };
+
+
 
     // Convert grouped timers to array for FlatList
     const categoryData = useMemo(() => {
@@ -230,31 +291,15 @@ const HomeScreen = () => {
                                 onChangeText={setDuration}
                                 keyboardType="numeric"
                             />
-                            <Dropdown
-                                options={[
-                                    ...categories.map(cat => ({ label: cat, value: cat })),
-                                    { label: '+ Add New Category', value: '__add_new__' }
-                                ]}
+                            <CustomDropdown
+                                options={categories}
                                 value={category}
                                 onSelect={handleCategoryChange}
+                                onAddOption={handleAddCategory}
+                                onDeleteOption={handleDeleteCategory}
+                                placeholder="Select category..."
+                                title="Select Category"
                             />
-                            {addingCategory && (
-                                <View style={styles.addCategoryRow}>
-                                    <Input
-                                        placeholder="New category"
-                                        value={newCategory}
-                                        onChangeText={setNewCategory}
-                                        style={[{ flex: 1, marginRight: 8 }]}
-                                    />
-                                    <Button
-                                        title="Add"
-                                        disabled={
-                                            !newCategory.trim() || categories.includes(newCategory.trim())
-                                        }
-                                        onPress={handleAddCategory}
-                                    />
-                                </View>
-                            )}
                             <Button
                                 title="Save Timer"
                                 disabled={
@@ -262,8 +307,7 @@ const HomeScreen = () => {
                                     !duration.trim() ||
                                     isNaN(Number(duration)) ||
                                     Number(duration) <= 0 ||
-                                    !category ||
-                                    addingCategory
+                                    !category
                                 }
                                 onPress={handleSave}
                             />

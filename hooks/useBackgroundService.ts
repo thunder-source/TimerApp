@@ -4,6 +4,12 @@ import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Timer, TimerStatus } from '../contexts/TimerContext';
 import { TIMER_STATE_KEY } from '../constant';
+import notifee, { 
+  AndroidImportance, 
+  AndroidStyle, 
+  TriggerType,
+  TimestampTrigger 
+} from '@notifee/react-native';
 
 interface BackgroundTimerState {
     timers: Timer[];
@@ -13,6 +19,7 @@ interface BackgroundTimerState {
 export const useBackgroundService = () => {
     const appStateRef = useRef(AppState.currentState);
     const backgroundIntervalRef = useRef<number | null>(null);
+    const scheduledNotificationsRef = useRef<Set<string>>(new Set());
 
     const saveTimerState = async (timers: Timer[]) => {
         try {
@@ -64,6 +71,63 @@ export const useBackgroundService = () => {
         return [];
     };
 
+    // Function to schedule notifications from background service
+    const scheduleBackgroundNotification = async (timerName: string, timerId: string) => {
+        try {
+            // Check if notification was already scheduled for this timer
+            const notificationId = `${timerId}-complete`;
+            if (scheduledNotificationsRef.current.has(notificationId)) {
+                console.log('Notification already scheduled for timer:', timerName);
+                return;
+            }
+
+            console.log('Scheduling background notification for timer:', timerName);
+            
+            // Create trigger for immediate notification
+            const trigger: TimestampTrigger = {
+                type: TriggerType.TIMESTAMP,
+                timestamp: Date.now() + 1000, // 1 second from now
+            };
+
+            // Create notification
+            await notifee.createTriggerNotification(
+                {
+                    title: 'Timer Complete',
+                    body: `${timerName} is complete!`,
+                    id: notificationId,
+                    android: {
+                        channelId: 'timer-channel',
+                        importance: AndroidImportance.HIGH,
+                        sound: 'default',
+                        vibrationPattern: [300, 500],
+                        largeIcon: 'ic_launcher',
+                        smallIcon: 'ic_launcher',
+                        color: '#4CAF50',
+                        pressAction: {
+                            id: 'default',
+                        },
+                        style: {
+                            type: AndroidStyle.BIGTEXT,
+                            text: `${timerName} is complete!`,
+                        },
+                    },
+                    ios: {
+                        sound: 'default',
+                        critical: true,
+                        categoryId: 'timer',
+                    },
+                },
+                trigger,
+            );
+            
+            // Mark notification as scheduled
+            scheduledNotificationsRef.current.add(notificationId);
+            console.log('Background notification scheduled successfully for timer:', timerName);
+        } catch (error) {
+            console.error('Error scheduling background notification:', error);
+        }
+    };
+
     const startBackgroundService = (timers: Timer[], onTick: (timerId: string) => void) => {
         if (backgroundIntervalRef.current) {
             BackgroundTimer.clearInterval(backgroundIntervalRef.current);
@@ -88,7 +152,12 @@ export const useBackgroundService = () => {
                     console.log(`Background tick for timer: ${timer.name} (${timer.remaining}s -> ${newRemaining}s)`);
                     
                     if (newRemaining <= 0) {
-                        // Timer completed
+                        // Timer completed - schedule notification immediately
+                        console.log(`Timer completed in background: ${timer.name} (ID: ${timer.id})`);
+                        
+                        // Schedule completion notification
+                        scheduleBackgroundNotification(timer.name, timer.id);
+                        
                         return { ...timer, remaining: 0, status: 'completed' as TimerStatus };
                     } else {
                         // Timer still running
@@ -116,6 +185,8 @@ export const useBackgroundService = () => {
             backgroundIntervalRef.current = null;
             console.log('Stopped background timer service');
         }
+        // Don't clear scheduled notifications tracking here - let it persist
+        // to prevent duplicate notifications when app comes to foreground
     };
 
     const handleAppStateChange = (nextAppState: AppStateStatus, timers: Timer[], onTick: (timerId: string) => void) => {
