@@ -59,7 +59,6 @@ const CustomDropdown: React.FC<SimpleCreatableDropdownProps> = ({
             onSelect(newOption);
             setIsOpen(false);
             setSearchText('');
-            Alert.alert('Success', `Added "${newOption}" to the list!`);
         } catch (error) {
             Alert.alert('Error', 'Failed to add new option');
         } finally {
