@@ -24,7 +24,6 @@ export const useHistory = () => {
         setIsLoading(true);
         try {
             const data = await AsyncStorage.getItem(HISTORY_KEY);
-            console.log('data HISTORY_KEY:', data)   
             if (data) {
                 const parsedHistory = JSON.parse(data);
                 // Handle backward compatibility for history items without duration or category
@@ -55,9 +54,22 @@ export const useHistory = () => {
             };
 
             setHistory(prevHistory => {
-                const updatedHistory = [newHistoryItem, ...prevHistory];
+                // Check if timer with this ID already exists
+                const existingTimerIndex = prevHistory.findIndex(item => item.id === timer.id);
+                
+                let updatedHistory;
+                if (existingTimerIndex !== -1) {
+                    // Replace existing timer with the new one
+                    updatedHistory = [...prevHistory];
+                    updatedHistory[existingTimerIndex] = newHistoryItem;
+                    console.log(`Updated existing timer in history: ${timer.name} (ID: ${timer.id})`);
+                } else {
+                    // Add new timer to the beginning
+                    updatedHistory = [newHistoryItem, ...prevHistory];
+                    console.log(`Successfully added new timer to history: ${timer.name} (ID: ${timer.id})`);
+                }
+                
                 AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
-                console.log(`Successfully added timer to history: ${timer.name} (ID: ${timer.id})`);
                 return updatedHistory;
             });
         } catch (error) {

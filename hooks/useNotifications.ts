@@ -26,14 +26,7 @@ export function useNotifications() {
         if (supportsNotificationPermission()) {
           // Use PermissionsAndroid for Android 13+
           const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-            {
-              title: 'Notification Permission',
-              message: 'This app needs notification permission to alert you when timers complete.',
-              buttonNeutral: 'Ask Me Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'OK',
-            }
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
           );
           
           console.log('Android notification permission result:', granted);

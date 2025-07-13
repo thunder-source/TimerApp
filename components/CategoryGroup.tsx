@@ -93,14 +93,17 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
                             <Button
                                 title="Start All"
                                 onPress={onStartAll}
+                                style={{ paddingHorizontal: spacing.sm }}
                             />
                             <Button
                                 title="Pause All"
                                 onPress={onPauseAll}
+                                style={{ paddingHorizontal: spacing.sm }}
                             />
                             <Button
                                 title="Reset All"
                                 onPress={onResetAll}
+                                style={{ paddingHorizontal: spacing.sm }}
                             />
                         </View>
                     </View>
