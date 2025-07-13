@@ -35,6 +35,7 @@ const HomeScreen = () => {
     const [isAddTimerModalVisible, setIsAddTimerModalVisible] = useState(false);
     const [appState, setAppState] = useState(AppState.currentState);
     const [backgroundStatus, setBackgroundStatus] = useState('Active');
+    const [filterCategory, setFilterCategory] = useState<string>('All');
 
     // Add timer form state
     const { getItem: getCategories, setItem: saveCategories } = useAsyncStorage<string[]>(CATEGORIES_KEY);
@@ -174,13 +175,19 @@ const HomeScreen = () => {
 
 
 
-    // Convert grouped timers to array for FlatList
+    // Filtered and grouped timers for display
+    const filteredGrouped = useMemo(() => {
+        if (filterCategory === 'All') return grouped;
+        return filterCategory in grouped ? { [filterCategory]: grouped[filterCategory] } : {};
+    }, [grouped, filterCategory]);
+
+    // Convert filteredGrouped timers to array for FlatList
     const categoryData = useMemo(() => {
-        return Object.entries(grouped).map(([category, timers]) => ({
+        return Object.entries(filteredGrouped).map(([category, timers]) => ({
             category,
             timers: timers as Timer[],
         }));
-    }, [grouped]);
+    }, [filteredGrouped]);
 
     const renderCategory = ({ item }: { item: { category: string; timers: Timer[] } }) => (
         <CategoryGroup
@@ -221,9 +228,11 @@ const HomeScreen = () => {
         <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No active timers</Text>
             <Text style={styles.emptySubtitle}>
-                {timers.length === 0
+                {timers.length === 0 && filterCategory === 'All'
                     ? 'Create your first timer to get started!'
-                    : 'All timers are completed. Check the History tab to see completed timers.'
+                    : categoryData.length === 0 && filterCategory !== 'All'
+                        ? `No timers found for "${filterCategory}".`
+                        : 'All timers are completed. Check the History tab to see completed timers.'
                 }
             </Text>
         </View>
@@ -246,6 +255,20 @@ const HomeScreen = () => {
                 title="Timer"
                 rightComponent={<AddButton />}
             />
+
+            {/* Filter Dropdown */}
+            <View style={styles.filterRow}>
+                <MaterialCommunityIcons name="filter-variant" size={22} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: fontSizes.medium, color: colors.text, fontWeight: 'bold', marginRight: 8 }}>Filter:</Text>
+                <CustomDropdown
+                    options={["All", ...categories]}
+                    value={filterCategory}
+                    onSelect={setFilterCategory}
+                    placeholder="Filter by category..."
+                    title="Filter by Category"
+                    style={{ flex: 1, minWidth: 120 }}
+                />
+            </View>
 
             {/* Background Status Indicator */}
             {appState !== 'active' && (
@@ -434,7 +457,26 @@ const createStyles = (colors: any) => StyleSheet.create({
         borderRadius: 20,
         backgroundColor: colors.primary + '11',
         marginLeft: 8,
-    }
+    },
+    filterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        marginBottom: 8,
+        paddingVertical: 10,
+        borderTopWidth: 0,
+        borderBottomLeftRadius: 12,
+        borderBottomRightRadius: 12,
+        backgroundColor: colors.background,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 2,
+        elevation: 1,
+        borderWidth: 1,
+        borderColor: colors.border,
+        gap: 10,
+    },
 });
 
 export default HomeScreen; 
