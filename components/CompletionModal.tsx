@@ -20,6 +20,7 @@ const CompletionModal: React.FC<CompletionModalProps> = ({
             animationType="fade"
             transparent={true}
             onRequestClose={onClose}
+            statusBarTranslucent={true}
         >
             <View style={styles.overlay}>
                 <View style={styles.modalContainer}>
@@ -46,7 +47,7 @@ const CompletionModal: React.FC<CompletionModalProps> = ({
                     <TouchableOpacity
                         style={styles.closeButton}
                         onPress={() => {
-                            console.log('Completion modal closed by user');
+                            console.log('Completion modal closed by user - clearing completed timers');
                             onClose();
                         }}
                         activeOpacity={0.8}

@@ -24,6 +24,7 @@ export type TimerAction =
     | { type: 'RESET_TIMER'; id: string }
     | { type: 'TICK'; id: string }
     | { type: 'COMPLETE_TIMER'; id: string }
+    | { type: 'COMPLETE_MULTIPLE_TIMERS'; timerIds: string[] }
     | { type: 'LOAD_TIMERS'; timers: Timer[] };
 
 interface TimerContextType {
@@ -81,6 +82,10 @@ function timerReducer(state: Timer[], action: TimerAction): Timer[] {
             return state.map((t) =>
                 t.id === action.id ? { ...t, status: 'completed', remaining: 0 } : t
             );
+        case 'COMPLETE_MULTIPLE_TIMERS':
+            return state.map((t) =>
+                action.timerIds.includes(t.id) ? { ...t, status: 'completed', remaining: 0 } : t
+            );
         case 'LOAD_TIMERS':
             return action.timers;
         default:
@@ -109,6 +114,7 @@ export function TimerProvider({ children }: TimerProviderProps) {
         handleAppStateChange,
         saveTimerState,
         loadTimerState,
+        clearCompletedTimers,
     } = useBackgroundService();
 
     // Store function reference to avoid dependency issues
@@ -139,12 +145,24 @@ export function TimerProvider({ children }: TimerProviderProps) {
     }, []);
 
     const hideCompletionModal = useCallback(() => {
-        console.log('Hiding completion modal and clearing data');
+        console.log('Hiding completion modal and clearing completed timers');
         setCompletionModal({ visible: false, timerName: '' });
 
-        // Clear the tracking set to prevent memory leaks
-        // We'll clear it periodically or when the app is closed
-    }, []);
+        // Clear completed timers immediately when modal is closed
+        const activeTimers = timers.filter(timer => timer.status !== 'completed');
+        if (activeTimers.length !== timers.length) {
+            console.log(`Clearing ${timers.length - activeTimers.length} completed timers from storage`);
+            AsyncStorage.setItem('timers', JSON.stringify(activeTimers));
+            dispatch({ type: 'LOAD_TIMERS', timers: activeTimers });
+
+            // Also clear completed timers from background storage
+            clearCompletedTimers();
+        }
+
+        // Clear the completed timers tracking set to prevent memory leaks
+        completedTimersRef.current.clear();
+        console.log('Cleared completed timers tracking set');
+    }, [timers, dispatch, clearCompletedTimers]);
 
     // Handle timer tick
     const handleTimerTick = useCallback((timerId: string) => {
@@ -197,8 +215,13 @@ export function TimerProvider({ children }: TimerProviderProps) {
                         });
 
                         // Handle completed timers
+                        console.log(`Processing ${newlyCompletedTimers.length} timers completed in background`);
                         newlyCompletedTimers.forEach(timer => {
-                            console.log(`Timer completed in background: ${timer.name}`);
+                            console.log(`Timer completed in background: ${timer.name} (ID: ${timer.id})`);
+
+                            // Add to history IMMEDIATELY when timer completes in background
+                            addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
+
                             // Schedule completion notification
                             const notificationTime = new Date(Date.now() + 1000);
                             scheduleNotificationRef.current(
@@ -207,8 +230,7 @@ export function TimerProvider({ children }: TimerProviderProps) {
                                 notificationTime,
                                 `${timer.id}-complete`
                             );
-                            // Add to history
-                            addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration });
+
                             // Show completion modal
                             showCompletionModalRef.current(timer.name, timer.id);
                         });
@@ -280,6 +302,8 @@ export function TimerProvider({ children }: TimerProviderProps) {
         }
     }, [timers]); // Only depend on timers
 
+
+
     // App state change listener
     useEffect(() => {
         const subscription = AppState.addEventListener('change', handleAppStateChangeWrapper);
@@ -298,8 +322,17 @@ export function TimerProvider({ children }: TimerProviderProps) {
             !completedTimersRef.current.has(timer.id)
         );
 
+        console.log(`Processing ${newlyCompletedTimers.length} newly completed timers:`, newlyCompletedTimers.map(t => `${t.name} (${t.id})`));
+
+        // Process all completed timers immediately
         newlyCompletedTimers.forEach((timer) => {
-            console.log(`Handling completion for timer: ${timer.name}`);
+            console.log(`Handling completion for timer: ${timer.name} (ID: ${timer.id})`);
+
+            // Mark as processed FIRST to prevent duplicate processing
+            completedTimersRef.current.add(timer.id);
+
+            // Add to history IMMEDIATELY when timer completes
+            addToHistory({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
 
             // Schedule completion notification
             const notificationTime = new Date(Date.now() + 2000);
@@ -310,14 +343,8 @@ export function TimerProvider({ children }: TimerProviderProps) {
                 `${timer.id}-complete`
             );
 
-            // Add to history
-            addToHistory({ id: timer.id, name: timer.name, duration: timer.duration });
-
             // Show completion modal
             showCompletionModal(timer.name, timer.id);
-
-            // Mark as processed
-            completedTimersRef.current.add(timer.id);
         });
     }, [timers, scheduleNotification, addToHistory, showCompletionModal]);
 

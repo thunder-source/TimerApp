@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, AppState, TouchableOpacity } from 'react-native';
 import { useTimers } from '../contexts/TimerContext';
 import { colors, spacing } from '../utils/theme';
+import { generateUniqueId } from '../utils/time';
 
 const TimerDebug: React.FC = () => {
     const { timers, dispatch } = useTimers();
@@ -21,7 +22,7 @@ const TimerDebug: React.FC = () => {
         dispatch({
             type: 'ADD_TIMER',
             timer: {
-                id: Date.now().toString(),
+                id: generateUniqueId(),
                 name: 'Background Test (15s)',
                 duration: 15,
                 remaining: 15,

@@ -10,4 +10,8 @@ export function formatSeconds(seconds: number): string {
 
 export function getNowTimestamp(): number {
   return Date.now();
-} 
+}
+
+export const generateUniqueId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}; 

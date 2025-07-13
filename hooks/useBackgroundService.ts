@@ -21,8 +21,30 @@ export const useBackgroundService = () => {
                 lastUpdate: Date.now(),
             };
             await AsyncStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+            console.log(`Saved ${timers.length} timers to background storage`);
         } catch (error) {
             console.error('Error saving timer state:', error);
+        }
+    };
+
+    const clearCompletedTimers = async () => {
+        try {
+            const data = await AsyncStorage.getItem(TIMER_STATE_KEY);
+            if (data) {
+                const state: BackgroundTimerState = JSON.parse(data);
+                const activeTimers = state.timers.filter(timer => timer.status !== 'completed');
+                
+                if (activeTimers.length !== state.timers.length) {
+                    const newState: BackgroundTimerState = {
+                        timers: activeTimers,
+                        lastUpdate: Date.now(),
+                    };
+                    await AsyncStorage.setItem(TIMER_STATE_KEY, JSON.stringify(newState));
+                    console.log(`Cleared ${state.timers.length - activeTimers.length} completed timers from background storage`);
+                }
+            }
+        } catch (error) {
+            console.error('Error clearing completed timers from background storage:', error);
         }
     };
 
@@ -124,5 +146,6 @@ export const useBackgroundService = () => {
         handleAppStateChange,
         saveTimerState,
         loadTimerState,
+        clearCompletedTimers,
     };
 }; 

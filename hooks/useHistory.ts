@@ -6,6 +6,7 @@ export interface HistoryItem {
     id: string;
     name: string;
     duration: number; // in seconds
+    category: string;
     completedAt: number;
 }
 
@@ -23,12 +24,14 @@ export const useHistory = () => {
         setIsLoading(true);
         try {
             const data = await AsyncStorage.getItem(HISTORY_KEY);
+            console.log('data HISTORY_KEY:', data)   
             if (data) {
                 const parsedHistory = JSON.parse(data);
-                // Handle backward compatibility for history items without duration
+                // Handle backward compatibility for history items without duration or category
                 const compatibleHistory = parsedHistory.map((item: any) => ({
                     ...item,
                     duration: item.duration || 0, // Default to 0 if duration is missing
+                    category: item.category || 'Uncategorized', // Default to 'Uncategorized' if category is missing
                 }));
                 setHistory(compatibleHistory);
             }
@@ -39,22 +42,28 @@ export const useHistory = () => {
         }
     };
 
-    const addToHistory = useCallback(async (timer: { id: string; name: string; duration: number }) => {
+    const addToHistory = useCallback(async (timer: { id: string; name: string; duration: number; category: string }) => {
         try {
+            console.log(`Adding timer to history: ${timer.name} (ID: ${timer.id})`);
+            
             const newHistoryItem: HistoryItem = {
                 id: timer.id,
                 name: timer.name,
                 duration: timer.duration,
+                category: timer.category,
                 completedAt: Date.now(),
             };
 
-            const updatedHistory = [newHistoryItem, ...history];
-            await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
-            setHistory(updatedHistory);
+            setHistory(prevHistory => {
+                const updatedHistory = [newHistoryItem, ...prevHistory];
+                AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+                console.log(`Successfully added timer to history: ${timer.name} (ID: ${timer.id})`);
+                return updatedHistory;
+            });
         } catch (error) {
             console.error('Error adding to history:', error);
         }
-    }, [history]);
+    }, []);
 
     const clearHistory = useCallback(async () => {
         console.log('clearHistory function called');

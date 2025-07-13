@@ -78,16 +78,10 @@ const HistoryScreen = () => {
                 title="Timer History"
                 subtitle="View your completed timers"
                 rightComponent={
-                    history.length > 0 ? (
+                    history.length > 0 && (
                         <Button
                             title="Clear"
                             onPress={handleClearHistory}
-                            style={styles.clearButton}
-                        />
-                    ) : (
-                        <Button
-                            title="Test"
-                            onPress={() => console.log('Test button pressed, history length:', history.length)}
                             style={styles.clearButton}
                         />
                     )
@@ -103,7 +97,10 @@ const HistoryScreen = () => {
                     renderItem={({ item }) => (
                         <View style={styles.historyItem}>
                             <View style={styles.itemContent}>
-                                <Text style={styles.timerName}>{item.name}</Text>
+                                <View style={styles.itemHeader}>
+                                    <Text style={styles.timerName}>{item.name}</Text>
+                                    <Text style={styles.category}>{item.category}</Text>
+                                </View>
                                 <View style={styles.itemDetails}>
                                     {item.duration > 0 && (
                                         <Text style={styles.duration}>
@@ -177,11 +174,27 @@ const styles = StyleSheet.create({
     itemContent: {
         padding: spacing.lg,
     },
+    itemHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: spacing.sm,
+    },
     timerName: {
         fontSize: fontSizes.large,
         fontWeight: '600',
         color: colors.text,
-        marginBottom: spacing.sm,
+        flex: 1,
+    },
+    category: {
+        fontSize: fontSizes.small,
+        fontWeight: '500',
+        color: colors.primary,
+        backgroundColor: colors.primary + '15',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.sm,
+        overflow: 'hidden',
     },
     itemDetails: {
         gap: spacing.xs,

@@ -6,6 +6,7 @@ import { colors, fontSizes } from '../utils/theme';
 import { Header, Button, Input } from '../components/ui';
 import Dropdown from '../components/ui/Dropdown';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { generateUniqueId } from '../utils/time';
 
 function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
     // Filter out completed timers - they should only appear in history
@@ -70,7 +71,7 @@ const HomeScreen = () => {
         dispatch({
             type: 'ADD_TIMER',
             timer: {
-                id: Date.now().toString(),
+                id: generateUniqueId(),
                 name,
                 duration: Number(duration),
                 remaining: Number(duration),
@@ -82,7 +83,6 @@ const HomeScreen = () => {
         setDuration('');
         setCategory(categories[0]);
         setIsAddTimerModalVisible(false);
-        Alert.alert('Timer added!');
     };
 
     const handleCategoryChange = (itemValue: string, option: any) => {
