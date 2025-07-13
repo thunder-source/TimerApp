@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useHistory } from '../hooks/useHistory';
 import { colors, spacing, fontSizes, borderRadius } from '../utils/theme';
 import Button from '../components/ui/Button';
-import { Header } from '../components/ui';
+import { Header, Loading } from '../components/ui';
 
 const HistoryScreen = () => {
-    const { history, clearHistory, cleanupOldHistory, loadHistory } = useHistory();
+    const { history, isLoading, clearHistory, cleanupOldHistory, loadHistory } = useHistory();
 
     // Auto-cleanup old history entries (older than 30 days) when component mounts
     React.useEffect(() => {
@@ -17,9 +17,38 @@ const HistoryScreen = () => {
     // Reload history data when screen comes into focus
     useFocusEffect(
         React.useCallback(() => {
+            console.log('HistoryScreen focused, loading history...');
             loadHistory();
         }, [])
     );
+
+    const handleClearHistory = () => {
+        console.log('Clear history button pressed');
+        Alert.alert(
+            'Clear History',
+            'Are you sure you want to clear all timer history? This action cannot be undone.',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                    onPress: () => console.log('Clear history cancelled'),
+                },
+                {
+                    text: 'Clear All',
+                    style: 'destructive',
+                    onPress: async () => {
+                        console.log('Clear history confirmed, executing...');
+                        try {
+                            await clearHistory();
+                            console.log('History cleared successfully');
+                        } catch (error) {
+                            console.error('Error clearing history:', error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     const formatDate = (timestamp: number) => {
         const date = new Date(timestamp);
@@ -27,6 +56,20 @@ const HistoryScreen = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const formatDuration = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${remainingSeconds}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${remainingSeconds}s`;
+        } else {
+            return `${remainingSeconds}s`;
+        }
     };
 
     return (
@@ -38,36 +81,54 @@ const HistoryScreen = () => {
                     history.length > 0 ? (
                         <Button
                             title="Clear"
-                            onPress={clearHistory}
+                            onPress={handleClearHistory}
                             style={styles.clearButton}
                         />
-                    ) : undefined
+                    ) : (
+                        <Button
+                            title="Test"
+                            onPress={() => console.log('Test button pressed, history length:', history.length)}
+                            style={styles.clearButton}
+                        />
+                    )
                 }
             />
-            <FlatList
-                data={history}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.historyItem}>
-                        <View style={styles.itemContent}>
-                            <Text style={styles.timerName}>{item.name}</Text>
-                            <Text style={styles.completionTime}>
-                                Completed: {formatDate(item.completedAt)}
+            {isLoading ? (
+                <Loading text="Loading history..." />
+            ) : (
+
+                <FlatList
+                    data={history}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <View style={styles.historyItem}>
+                            <View style={styles.itemContent}>
+                                <Text style={styles.timerName}>{item.name}</Text>
+                                <View style={styles.itemDetails}>
+                                    {item.duration > 0 && (
+                                        <Text style={styles.duration}>
+                                            Duration: {formatDuration(item.duration)}
+                                        </Text>
+                                    )}
+                                    <Text style={styles.completionTime}>
+                                        Completed: {formatDate(item.completedAt)}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Text style={styles.emptyText}>No completed timers yet</Text>
+                            <Text style={styles.emptySubtext}>
+                                Complete some timers to see them here
                             </Text>
                         </View>
-                    </View>
-                )}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No completed timers yet</Text>
-                        <Text style={styles.emptySubtext}>
-                            Complete some timers to see them here
-                        </Text>
-                    </View>
-                }
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.listContent}
-            />
+                    }
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.listContent}
+                />
+            )}
         </View>
     );
 };
@@ -120,7 +181,15 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.large,
         fontWeight: '600',
         color: colors.text,
-        marginBottom: spacing.xs,
+        marginBottom: spacing.sm,
+    },
+    itemDetails: {
+        gap: spacing.xs,
+    },
+    duration: {
+        fontSize: fontSizes.small,
+        color: colors.primary,
+        fontWeight: '600',
     },
     completionTime: {
         fontSize: fontSizes.small,
@@ -143,6 +212,24 @@ const styles = StyleSheet.create({
         fontSize: fontSizes.medium,
         color: colors.muted,
         textAlign: 'center',
+    },
+    debugInfo: {
+        backgroundColor: colors.primary + '20',
+        padding: spacing.sm,
+        margin: spacing.sm,
+        borderRadius: borderRadius.sm,
+    },
+    debugText: {
+        fontSize: fontSizes.small,
+        color: colors.primary,
+        fontWeight: '500',
+    },
+    debugButton: {
+        backgroundColor: colors.primary,
+        padding: spacing.sm,
+        borderRadius: borderRadius.sm,
+        marginTop: spacing.sm,
+        alignItems: 'center',
     },
 });
 

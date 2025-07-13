@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useRef } from 'react';
 import { useAsyncStorage } from './useAsyncStorage';
-import { useNotifications, configureNotificationChannel } from './useNotifications';
+import { useNotifications } from './useNotifications';
 
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'completed';
 
@@ -78,7 +78,7 @@ export function useTimers() {
     getItem().then((saved) => {
       if (saved) dispatch({ type: 'LOAD_TIMERS', timers: saved });
     });
-    configureNotificationChannel();
+    // Note: configureNotificationChannel is called in TimerContext
   }, []);
 
   // Save timers to AsyncStorage on change

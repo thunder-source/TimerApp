@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
       android:name=".MainApplication"
@@ -22,5 +29,27 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+      
+      <!-- Notification Service -->
+      <service
+        android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationListenerService"
+        android:exported="false" >
+        <intent-filter>
+          <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+      </service>
+      
+      <!-- Notification Receiver -->
+      <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationActions" />
+      <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationPublisher" />
+      <receiver android:name="com.dieam.reactnativepushnotification.modules.RNPushNotificationBootEventReceiver"
+        android:exported="false">
+        <intent-filter>
+          <action android:name="android.intent.action.BOOT_COMPLETED" />
+          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+          <action android:name="android.intent.action.PACKAGE_REPLACED" />
+          <data android:scheme="package" />
+        </intent-filter>
+      </receiver>
     </application>
 </manifest>

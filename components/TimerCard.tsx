@@ -22,9 +22,29 @@ const TimerCard: React.FC<TimerCardProps> = ({ timer, onStart, onPause, onReset 
                 <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
             </View>
             <View style={styles.buttonRow}>
-                <Button title="Start" onPress={onStart} disabled={timer.status === 'running' || timer.status === 'completed'} />
-                <Button title="Pause" onPress={onPause} disabled={timer.status !== 'running'} />
-                <Button title="Reset" onPress={onReset} />
+                <Button
+                    title="Start"
+                    onPress={() => {
+                        console.log(`Start button pressed for timer: ${timer.name}`);
+                        onStart();
+                    }}
+                    disabled={timer.status === 'running' || timer.status === 'completed'}
+                />
+                <Button
+                    title="Pause"
+                    onPress={() => {
+                        console.log(`Pause button pressed for timer: ${timer.name}`);
+                        onPause();
+                    }}
+                    disabled={timer.status !== 'running'}
+                />
+                <Button
+                    title="Reset"
+                    onPress={() => {
+                        console.log(`Reset button pressed for timer: ${timer.name}`);
+                        onReset();
+                    }}
+                />
             </View>
         </View>
     );

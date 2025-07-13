@@ -7,8 +7,8 @@ import HistoryScreen from './screens/HistoryScreen';
 import { colors, borderRadius, spacing } from './utils/theme';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { TimerProvider } from './contexts/TimerContext';
-import { Header } from './components/ui';
+import { TimerProvider, useTimers } from './contexts/TimerContext';
+import CompletionModal from './components/CompletionModal';
 
 const Tab = createBottomTabNavigator();
 
@@ -29,29 +29,23 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     };
   }, []);
 
-  // Hide tab bar when keyboard is visible
-  if (isKeyboardVisible) {
-    return null;
-  }
+  if (isKeyboardVisible) return null;
 
   // Map route names to icon names
   const icons: Record<string, string> = {
     Home: 'home',
     History: 'history',
   };
+
   return (
     <View style={styles.tabBar}>
       {state.routes.map((route, index) => {
-        console.log('route.name', route.name)
         const { options } = descriptors[route.key];
-        let label: string;
-        if (typeof options.tabBarLabel === 'string') {
-          label = options.tabBarLabel;
-        } else if (typeof options.title === 'string') {
-          label = options.title;
-        } else {
-          label = route.name;
-        }
+        const label = typeof options.tabBarLabel === 'string'
+          ? options.tabBarLabel
+          : typeof options.title === 'string'
+            ? options.title
+            : route.name;
         const isFocused = state.index === index;
         const iconName = icons[route.name] || 'circle-outline';
         return (
@@ -78,7 +72,9 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               color={isFocused ? colors.primary : colors.muted}
               style={styles.tabIcon}
             />
-            <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>{label}</Text>
+            <Text style={[styles.tabLabel, isFocused && styles.tabLabelFocused]}>
+              {label}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -86,11 +82,13 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   );
 }
 
-export default function App() {
+function AppContent() {
+  const { completionModal, hideCompletionModal } = useTimers();
+
   return (
-    <TimerProvider>
+    <>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <NavigationContainer>
@@ -105,11 +103,29 @@ export default function App() {
           </Tab.Navigator>
         </NavigationContainer>
       </KeyboardAvoidingView>
+
+      <CompletionModal
+        visible={completionModal.visible}
+        timerName={completionModal.timerName}
+        onClose={hideCompletionModal}
+      />
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <TimerProvider>
+      <AppContent />
     </TimerProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: colors.card,
@@ -132,13 +148,10 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   tabItemFocused: {
-    backgroundColor: colors.primary + '11', // subtle highlight
+    backgroundColor: colors.primary + '11',
   },
   tabIcon: {
     marginBottom: 2,
-  },
-  tabIconFocused: {
-    color: colors.primary,
   },
   tabLabel: {
     fontSize: 12,

@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: colors.background,
         paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight - 20 : 44,
-        paddingBottom: spacing.md,
+        paddingBottom: spacing.sm,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
         shadowColor: '#000',
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     centerSection: {
-        flex: 2,
+        flex: 3,
         alignItems: 'flex-start',
     },
     rightSection: {

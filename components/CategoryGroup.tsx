@@ -109,9 +109,18 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
                         renderItem={({ item }) => (
                             <TimerCard
                                 timer={item}
-                                onStart={() => onStart(item.id)}
-                                onPause={() => onPause(item.id)}
-                                onReset={() => onReset(item.id)}
+                                onStart={() => {
+                                    console.log(`CategoryGroup: Starting timer ${item.id}`);
+                                    onStart(item.id);
+                                }}
+                                onPause={() => {
+                                    console.log(`CategoryGroup: Pausing timer ${item.id}`);
+                                    onPause(item.id);
+                                }}
+                                onReset={() => {
+                                    console.log(`CategoryGroup: Resetting timer ${item.id}`);
+                                    onReset(item.id);
+                                }}
                             />
                         )}
                         showsVerticalScrollIndicator={false}

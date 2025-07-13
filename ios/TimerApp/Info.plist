@@ -48,5 +48,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>background-processing</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>This app uses notifications to alert you when timers complete.</string>
 </dict>
 </plist>

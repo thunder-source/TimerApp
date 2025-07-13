@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View, Text, Modal, TouchableOpacity, Alert } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { FlatList, StyleSheet, View, Text, Modal, TouchableOpacity, Alert, AppState } from 'react-native';
 import { useTimers, Timer } from '../contexts/TimerContext';
 import CategoryGroup from '../components/CategoryGroup';
 import { colors, fontSizes } from '../utils/theme';
@@ -28,6 +28,24 @@ const HomeScreen = () => {
         return initial;
     });
     const [isAddTimerModalVisible, setIsAddTimerModalVisible] = useState(false);
+    const [appState, setAppState] = useState(AppState.currentState);
+    const [backgroundStatus, setBackgroundStatus] = useState('Active');
+
+    // Monitor app state for background timer status
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            setAppState(nextAppState);
+            if (nextAppState === 'active') {
+                setBackgroundStatus('Active');
+            } else if (nextAppState === 'background') {
+                setBackgroundStatus('Background');
+            } else if (nextAppState === 'inactive') {
+                setBackgroundStatus('Inactive');
+            }
+        });
+
+        return () => subscription?.remove();
+    }, []);
 
     // Add timer form state
     const [categories, setCategories] = useState(['Workout', 'Study', 'Break']);
@@ -105,12 +123,30 @@ const HomeScreen = () => {
         <CategoryGroup
             category={item.category}
             timers={item.timers}
-            onStartAll={() => item.timers.forEach((t) => dispatch({ type: 'START_TIMER', id: t.id }))}
-            onPauseAll={() => item.timers.forEach((t) => dispatch({ type: 'PAUSE_TIMER', id: t.id }))}
-            onResetAll={() => item.timers.forEach((t) => dispatch({ type: 'RESET_TIMER', id: t.id }))}
-            onStart={(id) => dispatch({ type: 'START_TIMER', id })}
-            onPause={(id) => dispatch({ type: 'PAUSE_TIMER', id })}
-            onReset={(id) => dispatch({ type: 'RESET_TIMER', id })}
+            onStartAll={() => {
+                console.log('HomeScreen: Starting all timers in category', item.category);
+                item.timers.forEach((t) => dispatch({ type: 'START_TIMER', id: t.id }));
+            }}
+            onPauseAll={() => {
+                console.log('HomeScreen: Pausing all timers in category', item.category);
+                item.timers.forEach((t) => dispatch({ type: 'PAUSE_TIMER', id: t.id }));
+            }}
+            onResetAll={() => {
+                console.log('HomeScreen: Resetting all timers in category', item.category);
+                item.timers.forEach((t) => dispatch({ type: 'RESET_TIMER', id: t.id }));
+            }}
+            onStart={(id) => {
+                console.log('HomeScreen: Starting timer', id);
+                dispatch({ type: 'START_TIMER', id });
+            }}
+            onPause={(id) => {
+                console.log('HomeScreen: Pausing timer', id);
+                dispatch({ type: 'PAUSE_TIMER', id });
+            }}
+            onReset={(id) => {
+                console.log('HomeScreen: Resetting timer', id);
+                dispatch({ type: 'RESET_TIMER', id });
+            }}
             expanded={expandedCategories[item.category]}
             onToggle={() => handleToggle(item.category)}
         />
@@ -138,13 +174,24 @@ const HomeScreen = () => {
         </TouchableOpacity>
     );
 
+
     return (
         <View style={styles.screenContainer}>
             <Header
-                title="Timer App"
-                subtitle="Manage your timers"
+                title="Timer"
                 rightComponent={<AddButton />}
             />
+
+            {/* Background Status Indicator */}
+            {appState !== 'active' && (
+                <View style={styles.backgroundIndicator}>
+                    <Ionicons name="timer-sand" size={16} color={colors.primary} />
+                    <Text style={styles.backgroundText}>
+                        Timers running in background ({backgroundStatus})
+                    </Text>
+                </View>
+            )}
+
             <FlatList
                 data={categoryData}
                 renderItem={renderCategory}
@@ -241,11 +288,12 @@ const styles = StyleSheet.create({
     addButton: {
         padding: 8,
         paddingHorizontal: 12,
-        borderRadius: 20,
+        borderRadius: 12,
         backgroundColor: colors.primary + '11',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 2
+        gap: 2,
+        width: 115
     },
     emptyState: {
         flex: 1,
@@ -264,7 +312,6 @@ const styles = StyleSheet.create({
         color: '#6b7280',
         textAlign: 'center',
     },
-    // Modal styles
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -313,6 +360,31 @@ const styles = StyleSheet.create({
         color: colors.primary,
         textAlign: 'center',
         marginTop: 2,
+    },
+    settingsButton: {
+        padding: 8,
+        borderRadius: 20,
+        backgroundColor: colors.primary + '11',
+    },
+    backgroundIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primary + '15',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        gap: 8,
+    },
+    backgroundText: {
+        fontSize: fontSizes.small,
+        color: colors.primary,
+        fontWeight: '500',
+    },
+    testButton: {
+        padding: 8,
+        borderRadius: 20,
+        backgroundColor: colors.primary + '11',
+        marginLeft: 8,
     }
 });
 

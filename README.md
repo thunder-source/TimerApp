@@ -86,6 +86,34 @@ You've successfully run and modified your React Native App. :partying_face:
 
 If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
+## Notification Testing
+
+To test if notifications are working properly:
+
+1. **First Launch**: The app will automatically request notification permissions on first launch
+2. **Manual Testing**: 
+   - Tap the settings icon (gear) in the top-left corner of the Home screen
+   - If notifications are enabled, you can send a test notification
+   - If notifications are disabled, you can enable them from the settings
+3. **Timer Testing**: 
+   - Create a short timer (e.g., 10 seconds)
+   - Start the timer and wait for it to complete
+   - You should receive a notification when the timer finishes
+
+### Common Issues:
+
+- **Android**: Make sure to grant notification permissions when prompted
+- **iOS**: Check Settings > Notifications > TimerApp to ensure notifications are enabled
+- **Emulator**: Some emulators may not show notifications properly - test on a real device
+- **Background**: The app should work even when in the background
+
+### Debug Steps:
+
+1. Check the console logs for notification-related messages
+2. Verify notification permissions in device settings
+3. Test with a real device instead of emulator
+4. Ensure the app is not in battery optimization mode (Android)
+
 # Learn More
 
 To learn more about React Native, take a look at the following resources:
