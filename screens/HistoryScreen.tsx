@@ -133,7 +133,7 @@ const HistoryScreen = () => {
 const styles = StyleSheet.create({
     screenContainer: {
         flex: 1,
-        backgroundColor: colors.background,
+        backgroundColor: colors.light,
     },
     container: {
         flex: 1,

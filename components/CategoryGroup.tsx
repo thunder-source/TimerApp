@@ -4,6 +4,7 @@ import Button from './ui/Button';
 import { Timer } from '../contexts/TimerContext';
 import TimerCard from './TimerCard';
 import { colors, spacing, fontSizes, borderRadius } from '../utils/theme';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface CategoryGroupProps {
     category: string;
@@ -77,7 +78,7 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
                         ) : null}
                     </View>
                     <Animated.View style={[styles.toggleContainer, { transform: [{ rotate }] }]}>
-                        <Text style={styles.toggle}>▼</Text>
+                        <MaterialCommunityIcons name="chevron-down" size={24} color={colors.primary} />
                     </Animated.View>
                 </View>
             </TouchableOpacity>
@@ -123,6 +124,7 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
                                 }}
                             />
                         )}
+                        style={{ paddingTop: spacing.md }}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.flatListContent}
                     />
@@ -220,11 +222,6 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary + '15',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    toggle: {
-        fontSize: 12,
-        color: colors.primary,
-        fontWeight: 'bold',
     },
     expandedContent: {
         backgroundColor: colors.card,

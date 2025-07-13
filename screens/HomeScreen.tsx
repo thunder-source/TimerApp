@@ -5,7 +5,7 @@ import CategoryGroup from '../components/CategoryGroup';
 import { colors, fontSizes } from '../utils/theme';
 import { Header, Button, Input } from '../components/ui';
 import CustomDropdown from '../components/ui/CustomDropdown';
-import Ionicons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { generateUniqueId } from '../utils/time';
 import { useAsyncStorage } from '../hooks/useAsyncStorage';
 import { CATEGORIES_KEY } from '../constant/storageKeys';
@@ -231,7 +231,7 @@ const HomeScreen = () => {
             onPress={() => setIsAddTimerModalVisible(true)}
         >
             <Text style={styles.buttonText}>Add Timer</Text>
-            <Ionicons name="plus" size={24} color={colors.primary} />
+            <MaterialCommunityIcons name="plus" size={24} color={colors.primary} />
         </TouchableOpacity>
     );
 
@@ -246,7 +246,7 @@ const HomeScreen = () => {
             {/* Background Status Indicator */}
             {appState !== 'active' && (
                 <View style={styles.backgroundIndicator}>
-                    <Ionicons name="timer-sand" size={16} color={colors.primary} />
+                    <MaterialCommunityIcons name="timer-sand" size={16} color={colors.primary} />
                     <Text style={styles.backgroundText}>
                         Timers running in background ({backgroundStatus})
                     </Text>
@@ -275,7 +275,7 @@ const HomeScreen = () => {
                                 style={styles.closeButton}
                                 onPress={() => setIsAddTimerModalVisible(false)}
                             >
-                                <Ionicons name="close" size={24} color={colors.text} />
+                                <MaterialCommunityIcons name="close" size={24} color={colors.text} />
                             </TouchableOpacity>
                         </View>
 
