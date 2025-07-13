@@ -14,7 +14,8 @@ export interface Timer {
     remaining: number; // in seconds
     category: string;
     status: TimerStatus;
-    halfwayAlert?: boolean;
+    alertAt?: number; // seconds before end or absolute time in seconds
+    alertTriggered?: boolean; // true if alert has been triggered
 }
 
 export type TimerAction =
@@ -36,6 +37,7 @@ interface TimerContextType {
     };
     showCompletionModal: (timerName: string) => void;
     hideCompletionModal: () => void;
+    handleTimerReset: (timerId: string) => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -43,7 +45,7 @@ const TimerContext = createContext<TimerContextType | undefined>(undefined);
 function timerReducer(state: Timer[], action: TimerAction): Timer[] {
     switch (action.type) {
         case 'ADD_TIMER':
-            return [...state, action.timer];
+            return [...state, { ...action.timer, alertTriggered: false }];
         case 'START_TIMER':
             return state.map((t) => {
                 if (t.id === action.id && t.status !== 'completed') {
@@ -61,20 +63,27 @@ function timerReducer(state: Timer[], action: TimerAction): Timer[] {
         case 'RESET_TIMER':
             return state.map((t) =>
                 t.id === action.id
-                    ? { ...t, remaining: t.duration, status: 'idle' }
+                    ? { ...t, remaining: t.duration, status: 'idle', alertTriggered: false }
                     : t
             );
         case 'TICK':
             return state.map((t) => {
                 if (t.id === action.id && t.status === 'running') {
                     const newRemaining = Math.max(0, t.remaining - 1);
-                    console.log(`Timer ${t.name} ticked: ${t.remaining} -> ${newRemaining}`);
-                    if (newRemaining <= 0) {
-                        console.log(`Timer ${t.name} completed!`);
-                        // Return the completed timer, but we'll handle completion logic in useEffect
-                        return { ...t, remaining: 0, status: 'completed' };
+                    let newAlertTriggered = t.alertTriggered;
+                    // Check if alert should be triggered
+                    if (
+                        t.alertAt !== undefined &&
+                        !t.alertTriggered &&
+                        newRemaining === t.alertAt
+                    ) {
+                        console.log(`Alert condition met for timer ${t.name}: remaining=${newRemaining}, alertAt=${t.alertAt}`);
+                        newAlertTriggered = true;
                     }
-                    return { ...t, remaining: newRemaining };
+                    if (newRemaining <= 0) {
+                        return { ...t, remaining: 0, status: 'completed', alertTriggered: newAlertTriggered };
+                    }
+                    return { ...t, remaining: newRemaining, alertTriggered: newAlertTriggered };
                 }
                 return t;
             });
@@ -105,8 +114,19 @@ export function TimerProvider({ children }: TimerProviderProps) {
     const appStateRef = useRef(AppState.currentState);
     const completedTimersRef = useRef<Set<string>>(new Set());
     const shownCompletionModalsRef = useRef<Set<string>>(new Set());
+    const sentAlertsRef = useRef<Set<string>>(new Set());
     const timersRef = useRef<Timer[]>([]);
     const saveTimerStateRef = useRef<((timers: Timer[]) => Promise<void>) | null>(null);
+
+    console.log("timers", timers)
+    console.log("completedTimersRef", completedTimersRef)
+    console.log("shownCompletionModalsRef", shownCompletionModalsRef)
+    console.log("sentAlertsRef", sentAlertsRef)
+    console.log("saveTimerStateRef", saveTimerStateRef)
+    console.log("timersRef", timersRef)
+    console.log("appStateRef", appStateRef)
+    console.log("intervalRef", intervalRef)
+
 
     const {
         startBackgroundService,
@@ -169,6 +189,12 @@ export function TimerProvider({ children }: TimerProviderProps) {
         dispatch({ type: 'TICK', id: timerId });
     }, [dispatch]);
 
+    // Clear sent alerts when timer is reset
+    const handleTimerReset = useCallback((timerId: string) => {
+        sentAlertsRef.current.delete(timerId);
+        dispatch({ type: 'RESET_TIMER', id: timerId });
+    }, [dispatch]);
+
     // Store function references in refs to avoid dependency issues
     const startBackgroundServiceRef = useRef(startBackgroundService);
     const stopBackgroundServiceRef = useRef(stopBackgroundService);
@@ -220,7 +246,7 @@ export function TimerProvider({ children }: TimerProviderProps) {
                             console.log(`Timer completed in background: ${timer.name} (ID: ${timer.id})`);
 
                             // Add to history IMMEDIATELY when timer completes in background
-                            addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
+                            // addToHistoryRef.current({ id: timer.id, name: timer.name, duration: timer.duration, category: timer.category });
 
                             // Schedule completion notification
                             const notificationTime = new Date(Date.now() + 1000);
@@ -359,21 +385,13 @@ export function TimerProvider({ children }: TimerProviderProps) {
                 // Get current running timers to avoid stale closure
                 const currentRunningTimers = timersRef.current.filter((t) => t.status === 'running');
                 currentRunningTimers.forEach((t) => {
-                    // Tick the timer
+                    console.log(`Timer ${t.name}: remaining=${t.remaining}, alertAt=${t.alertAt}, alertTriggered=${t.alertTriggered}`);
+
+                    // Tick the timer first
                     handleTimerTick(t.id);
 
-                    // Halfway alert
-                    if (
-                        t.halfwayAlert &&
-                        t.remaining === Math.floor(t.duration / 2)
-                    ) {
-                        scheduleNotification(
-                            'Halfway Alert',
-                            `${t.name} is halfway done!`,
-                            new Date(Date.now()),
-                            `${t.id}-halfway`
-                        );
-                    }
+                    // Check for alert AFTER the tick (in the next render cycle)
+                    // We'll handle this in a separate effect that watches for alertTriggered changes
                 });
             }, 1000);
         }
@@ -383,7 +401,25 @@ export function TimerProvider({ children }: TimerProviderProps) {
                 intervalRef.current = null;
             }
         };
-    }, [timers, handleTimerTick, scheduleNotification]);
+    }, [timers, handleTimerTick]);
+
+    // Handle alert notifications when alertTriggered changes
+    useEffect(() => {
+        timers.forEach((timer) => {
+            if (timer.alertTriggered && timer.alertAt !== undefined && !sentAlertsRef.current.has(timer.id)) {
+                console.log(`Alert triggered for timer: ${timer.name} at ${timer.alertAt} seconds`);
+                sentAlertsRef.current.add(timer.id);
+                // Schedule notification for 1 second in the future to satisfy Notifee requirements
+                const notificationTime = new Date(Date.now() + 1000);
+                scheduleNotification(
+                    'Timer Alert',
+                    `${timer.name} has reached its alert time!`,
+                    notificationTime,
+                    `${timer.id}-alert`
+                );
+            }
+        });
+    }, [timers, scheduleNotification]);
 
     return (
         <TimerContext.Provider value={{
@@ -391,7 +427,8 @@ export function TimerProvider({ children }: TimerProviderProps) {
             dispatch,
             completionModal,
             showCompletionModal,
-            hideCompletionModal
+            hideCompletionModal,
+            handleTimerReset
         }}>
             {children}
         </TimerContext.Provider>

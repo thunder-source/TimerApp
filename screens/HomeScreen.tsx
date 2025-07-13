@@ -10,6 +10,7 @@ import { generateUniqueId } from '../utils/time';
 import { useAsyncStorage } from '../hooks/useAsyncStorage';
 import { CATEGORIES_KEY } from '../constant/storageKeys';
 import { useTheme } from '../contexts/ThemeContext';
+import Slider from '@react-native-community/slider';
 
 function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
     // Filter out completed timers - they should only appear in history
@@ -23,7 +24,7 @@ function groupTimersByCategory(timers: Timer[]): Record<string, Timer[]> {
 }
 
 const HomeScreen = () => {
-    const { timers, dispatch } = useTimers();
+    const { timers, dispatch, handleTimerReset } = useTimers();
     const { colors } = useTheme();
     const grouped = useMemo(() => groupTimersByCategory(timers), [timers]);
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
@@ -43,6 +44,11 @@ const HomeScreen = () => {
     const [name, setName] = useState('');
     const [duration, setDuration] = useState('');
     const [category, setCategory] = useState('');
+    // Alert state
+    const [alertEnabled, setAlertEnabled] = useState(false);
+    const [alertType, setAlertType] = useState<'slider' | 'custom'>('slider');
+    const [alertPercent, setAlertPercent] = useState(50); // default 50%
+    const [alertCustom, setAlertCustom] = useState('');
 
     // Load categories from storage on mount
     useEffect(() => {
@@ -100,6 +106,23 @@ const HomeScreen = () => {
             Alert.alert('Please enter a valid name and duration.');
             return;
         }
+        let alertAt: number | undefined = undefined;
+        if (alertEnabled) {
+            const dur = Number(duration);
+            if (alertType === 'slider') {
+                alertAt = Math.floor(dur * (1 - alertPercent / 100));
+                console.log(`Alert calculation: duration=${dur}, percent=${alertPercent}%, alertAt=${alertAt}`);
+            } else if (alertType === 'custom') {
+                const customSec = Number(alertCustom);
+                if (isNaN(customSec) || customSec <= 0 || customSec >= dur) {
+                    Alert.alert('Alert time must be greater than 0 and less than duration.');
+                    return;
+                }
+                alertAt = customSec;
+                console.log(`Custom alert: duration=${dur}, custom=${customSec}, alertAt=${alertAt}`);
+            }
+        }
+        console.log(`Creating timer with alertAt=${alertAt}, alertEnabled=${alertEnabled}`);
         dispatch({
             type: 'ADD_TIMER',
             timer: {
@@ -109,11 +132,16 @@ const HomeScreen = () => {
                 remaining: Number(duration),
                 category,
                 status: 'idle',
+                alertAt: alertEnabled ? alertAt : undefined,
+                alertTriggered: false,
             },
         });
         setName('');
         setDuration('');
         setCategory(categories[0]);
+        setAlertEnabled(false);
+        setAlertPercent(50);
+        setAlertCustom('');
         setIsAddTimerModalVisible(false);
     };
 
@@ -203,7 +231,7 @@ const HomeScreen = () => {
             }}
             onResetAll={() => {
                 console.log('HomeScreen: Resetting all timers in category', item.category);
-                item.timers.forEach((t) => dispatch({ type: 'RESET_TIMER', id: t.id }));
+                item.timers.forEach((t) => handleTimerReset(t.id));
             }}
             onStart={(id) => {
                 console.log('HomeScreen: Starting timer', id);
@@ -215,7 +243,7 @@ const HomeScreen = () => {
             }}
             onReset={(id) => {
                 console.log('HomeScreen: Resetting timer', id);
-                dispatch({ type: 'RESET_TIMER', id });
+                handleTimerReset(id);
             }}
             expanded={expandedCategories[item.category]}
             onToggle={() => handleToggle(item.category)}
@@ -327,6 +355,59 @@ const HomeScreen = () => {
                                 placeholder="Select category..."
                                 title="Select Category"
                             />
+                            {/* Alert Section */}
+                            <View style={{ gap: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                    <Text style={{ fontSize: fontSizes.medium, color: colors.text }}>Alert</Text>
+                                    <TouchableOpacity
+                                        style={[styles.settingsButton, { backgroundColor: alertEnabled ? colors.primary + '22' : colors.border }]}
+                                        onPress={() => setAlertEnabled((v) => !v)}
+                                    >
+                                        <MaterialCommunityIcons name={alertEnabled ? 'bell-ring' : 'bell-off'} size={20} color={alertEnabled ? colors.primary : colors.muted} />
+                                    </TouchableOpacity>
+                                </View>
+                                {alertEnabled && (
+                                    <View style={{ gap: 8 }}>
+                                        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+                                            <TouchableOpacity onPress={() => setAlertType('slider')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                <MaterialCommunityIcons name={alertType === 'slider' ? 'radiobox-marked' : 'radiobox-blank'} size={18} color={colors.primary} />
+                                                <Text style={{ color: colors.text }}>Halfway/Percent</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => setAlertType('custom')} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                <MaterialCommunityIcons name={alertType === 'custom' ? 'radiobox-marked' : 'radiobox-blank'} size={18} color={colors.primary} />
+                                                <Text style={{ color: colors.text }}>Custom (seconds left)</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        {alertType === 'slider' && (
+                                            <View style={{ gap: 4 }}>
+                                                <Text style={{ color: colors.muted, fontSize: fontSizes.small }}>
+                                                    Alert at {alertPercent}% left ({duration ? Math.floor(Number(duration) * (1 - alertPercent / 100)) : 0} seconds)
+                                                </Text>
+                                                <Slider
+                                                    minimumValue={1}
+                                                    maximumValue={99}
+                                                    step={1}
+                                                    value={alertPercent}
+                                                    onValueChange={setAlertPercent}
+                                                    minimumTrackTintColor={colors.primary}
+                                                    maximumTrackTintColor={colors.border}
+                                                    thumbTintColor={colors.primary}
+                                                    style={{ width: '100%' }}
+                                                    disabled={!duration}
+                                                />
+                                            </View>
+                                        )}
+                                        {alertType === 'custom' && (
+                                            <Input
+                                                placeholder="Alert when X seconds left"
+                                                value={alertCustom}
+                                                onChangeText={setAlertCustom}
+                                                keyboardType="numeric"
+                                            />
+                                        )}
+                                    </View>
+                                )}
+                            </View>
                             <Button
                                 style={{ flex: undefined }}
                                 title="Save Timer"
