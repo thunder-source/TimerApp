@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import Button from './ui/Button';
 import { Timer, TimerStatus } from '../contexts/TimerContext';
 import { formatSeconds } from '../utils/time';
+import { spacing } from '../utils/theme';
 
 interface TimerCardProps {
     timer: Timer;
@@ -91,10 +92,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#4caf50',
     },
     buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
         width: '100%',
         marginTop: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
     },
 });
 

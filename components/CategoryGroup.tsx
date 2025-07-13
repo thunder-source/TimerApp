@@ -90,17 +90,14 @@ const CategoryGroup: React.FC<CategoryGroupProps> = ({
                             <Button
                                 title="Start All"
                                 onPress={onStartAll}
-                                style={styles.bulkButton}
                             />
                             <Button
                                 title="Pause All"
                                 onPress={onPauseAll}
-                                style={styles.bulkButton}
                             />
                             <Button
                                 title="Reset All"
                                 onPress={onResetAll}
-                                style={styles.bulkButton}
                             />
                         </View>
                     </View>
@@ -227,7 +224,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.card,
     },
     bulkActions: {
-        paddingHorizontal: spacing.lg,
+        paddingHorizontal: spacing.md,
         paddingVertical: spacing.md,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
@@ -236,10 +233,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: spacing.sm,
-    },
-    bulkButton: {
-        flex: 1,
-        paddingVertical: spacing.sm,
     },
     flatListContent: {
         paddingHorizontal: spacing.lg,
