@@ -114,6 +114,20 @@ To test if notifications are working properly:
 3. Test with a real device instead of emulator
 4. Ensure the app is not in battery optimization mode (Android)
 
+# Assumptions Made During Development
+
+- **Notification Permissions**: It is assumed that users will grant notification permissions when prompted. The app requests these permissions on first launch and provides options to enable/disable notifications in the settings.
+- **Background Execution**: Timers are expected to run reliably in the background, but:
+  - On **iOS**, background execution time is limited by system policies. Long-running background tasks may be suspended by the system, and background fetch intervals are controlled by iOS.
+  - On **Android**, battery optimization or device-specific restrictions may affect background execution. Users may need to disable battery optimization for the app for best results.
+- **State Persistence**: Timer state is saved to AsyncStorage and is expected to persist across app restarts. However, if the app is force-closed or the device is under memory pressure, state loss may occur.
+- **Default Categories**: If no timer categories exist, default categories ("Workout", "Study", "Break") are created on first launch.
+- **Emulator Limitations**: Some emulators may not show notifications or handle background tasks as reliably as real devices. Testing on real hardware is recommended for full feature validation.
+- **Foreground Service (Android)**: The app does not currently implement a persistent foreground service for timers, which may affect reliability on some Android devices. This is noted as a future improvement.
+- **Notification Delivery**: The app schedules local notifications for timer completion and halfway alerts. Delivery depends on device settings and OS behavior.
+- **App State Monitoring**: The app monitors foreground/background/inactive states to switch timer modes and manage resources efficiently.
+- **Backward Compatibility**: History items without duration or category fields are assigned default values for compatibility with older app versions.
+
 # Learn More
 
 To learn more about React Native, take a look at the following resources:
